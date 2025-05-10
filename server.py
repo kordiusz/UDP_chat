@@ -36,6 +36,10 @@ class ChatProtocol(asyncio.DatagramProtocol):
             if addr not in self.clients:
                 self.clients.add(addr)
                 print(f"[NEW CLIENT] {addr}")
+                info = {"type":"admin", "msg": "NOWA OSOBA DOLACZA"}
+                for client in self.clients:
+                    if client != addr:
+                        self.transport.sendto(json.dumps(info).encode(), client)
 
             # Send to all other clients
             for client in self.clients:

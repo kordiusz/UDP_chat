@@ -43,6 +43,10 @@ class ClientProtocol(asyncio.DatagramProtocol):
 
     def datagram_received(self, data, addr):
         decoded = json.loads( data.decode())
+        if decoded["type"] == "admin":
+            msg = decoded["msg"]
+            print(f"[INFO]: {msg}")
+            return
         nick = decoded["nick"]
         msg = decoded["msg"]
         time = decoded["stamp"]
@@ -50,14 +54,14 @@ class ClientProtocol(asyncio.DatagramProtocol):
 
     def send_message(self, message, server_addr):
         if self.transport:
-            data = {"nick":self.nick, "msg":message, "stamp":datetime.now().strftime("%H:%M")}
+            data = {"type":"regular" ,"nick":self.nick, "msg":message, "stamp":datetime.now().strftime("%H:%M")}
             self.transport.sendto(json.dumps(data).encode(), server_addr)
 
 
 async def input_loop(protocol: ClientProtocol, server_addr):
     while True:
         stamp = datetime.now().strftime("%H:%M")
-        msg = await asyncio.to_thread(input, f"[{stamp}] {protocol.nick}: ")
+        msg = await asyncio.to_thread(input, "")
         protocol.send_message(msg, server_addr)
 
 

@@ -46,7 +46,7 @@ class Server:
 
         while True:
             try:
-                data, addr = await loop.sock_recv(sock, 1024)
+                data, addr = await loop.sock_recvfrom(sock, 1024)
                 message = data.decode('utf-8')
                 print(f"[RECV] From {addr}: {message}")
 

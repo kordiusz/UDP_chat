@@ -1,58 +1,100 @@
-import tkinter as tk
-from tkinter import messagebox, simpledialog
+# main.py
 import asyncio
+import json
+import socket
 import threading
-from discovery import listen_for_servers, broadcast_server_info
-from chat_server import start_chat_server
-from chat_client import run_chat_client
+import tkinter as tk
 
-class ChatApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("LAN Chat")
-        self.servers = {}
+from gui import ServerSelectionWindow, ChatWindow
 
-        self.listbox = tk.Listbox(root, width=50)
-        self.listbox.pack(padx=10, pady=10)
+BROADCAST_PORT = 9999
 
-        self.join_btn = tk.Button(root, text="Dołącz", command=self.join_server)
-        self.join_btn.pack(side=tk.LEFT, padx=10)
 
-        self.host_btn = tk.Button(root, text="Stwórz serwer", command=self.host_server)
-        self.host_btn.pack(side=tk.RIGHT, padx=10)
+class BroadcastListener(asyncio.DatagramProtocol):
+    def __init__(self, gui):
+        self.gui = gui
 
-        threading.Thread(target=self.start_discovery_loop, daemon=True).start()
+    def datagram_received(self, data, addr):
+        try:
+            decoded = json.loads(data.decode())
+            label = f"{decoded['name']} @ {decoded['host']}:{decoded['port']}"
+            self.gui.update_server_list(label, (decoded['host'], int(decoded['port'])))
+        except Exception:
+            pass
 
-    def update_server_list(self, info):
-        key = f"{info['name']} ({info['host']}:{info['port']})"
-        if key not in self.servers:
-            self.servers[key] = (info['host'], info['port'])
-            self.listbox.insert(tk.END, key)
 
-    def join_server(self):
-        selection = self.listbox.curselection()
-        if not selection:
-            messagebox.showwarning("Brak wyboru", "Wybierz serwer z listy.")
-            return
-        key = self.listbox.get(selection[0])
-        host, port = self.servers[key]
-        threading.Thread(target=asyncio.run, args=(run_chat_client(host, port),), daemon=True).start()
+class ChatClientProtocol(asyncio.DatagramProtocol):
+    def __init__(self, chat_gui, nickname, server_addr):
+        self.chat_gui = chat_gui
+        self.nickname = nickname
+        self.server_addr = server_addr
+        self.transport = None
 
-    def host_server(self):
-        port = simpledialog.askinteger("Port serwera", "Podaj numer portu (np. 8888):", minvalue=1024, maxvalue=65535)
-        if not port:
-            return
+    def connection_made(self, transport):
+        self.transport = transport
 
-        name = f"Serwer {port}"
-        threading.Thread(target=asyncio.run, args=(start_chat_server('0.0.0.0', port),), daemon=True).start()
-        threading.Thread(target=asyncio.run, args=(broadcast_server_info(name, port),), daemon=True).start()
-        messagebox.showinfo("Serwer uruchomiony", f"Twój serwer działa na porcie {port}.")
-        threading.Thread(target=asyncio.run, args=(run_chat_client('127.0.0.1', port),), daemon=True).start()
+    def datagram_received(self, data, addr):
+        try:
+            msg = json.loads(data.decode())
+            nick = msg.get("nick", "???")
+            content = msg.get("msg", "")
+            self.chat_gui.append_msg(f"{nick}: {content}")
+        except Exception:
+            self.chat_gui.append_msg(f"[BŁĄD] Nieprawidłowa wiadomość")
 
-    def start_discovery_loop(self):
-        asyncio.run(listen_for_servers(lambda info: self.root.after(0, self.update_server_list, info)))
+    def send_message(self, text):
+        payload = json.dumps({
+            "nick": self.nickname,
+            "msg": text
+        }).encode()
+        self.transport.sendto(payload, self.server_addr)
 
-if __name__ == '__main__':
+
+def start_tk_loop(root):
+    try:
+        while True:
+            root.update()
+    except tk.TclError:
+        pass
+
+
+def main():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
     root = tk.Tk()
-    app = ChatApp(root)
-    root.mainloop()
+    root.geometry("450x400")
+
+    def on_server_selected(server_addr, nickname):
+        chat_window = ChatWindow(root, lambda msg: protocol.send_message(msg))
+
+        async def start_chat():
+            _, p = await loop.create_datagram_endpoint(
+                lambda: ChatClientProtocol(chat_window, nickname, server_addr),
+                local_addr=("0.0.0.0", 0)
+            )
+            nonlocal protocol
+            protocol = p
+
+        asyncio.run_coroutine_threadsafe(start_chat(), loop)
+
+    protocol = None
+    selection = ServerSelectionWindow(root, on_server_selected)
+
+    loop.run_until_complete(loop.create_datagram_endpoint(
+        lambda: BroadcastListener(selection),
+        local_addr=("0.0.0.0", BROADCAST_PORT)
+    ))
+
+    threading.Thread(target=start_tk_loop, args=(root,), daemon=True).start()
+
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        loop.close()
+
+
+if __name__ == "__main__":
+    main()

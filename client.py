@@ -1,7 +1,7 @@
 import asyncio
 import socket
 import json
-
+from datetime import datetime
 BROADCAST_PORT = 9999
 RECEIVE_BUFFER_SIZE = 1024
 
@@ -33,24 +33,31 @@ class BroadcastListener:
 
 
 class ClientProtocol(asyncio.DatagramProtocol):
-    def __init__(self):
+    def __init__(self,nick):
         self.transport = None
+        self.nick = nick
 
     def connection_made(self, transport):
         self.transport = transport
         print("[KLIENT] Połączenie ustanowione.")
 
     def datagram_received(self, data, addr):
-        print(f"[WIADOMOŚĆ ODEBRANA] Od {addr}: {data.decode(errors='ignore')}")
+        decoded = json.loads( data.decode())
+        nick = decoded["nick"]
+        msg = decoded["msg"]
+        time = decoded["stamp"]
+        print(f"[{time}] {nick}: {msg}")
 
     def send_message(self, message, server_addr):
         if self.transport:
-            self.transport.sendto(message.encode(), server_addr)
+            data = {"nick":self.nick, "msg":message, "stamp":datetime.now().strftime("%H:%M")}
+            self.transport.sendto(json.dumps(data).encode(), server_addr)
 
 
 async def input_loop(protocol: ClientProtocol, server_addr):
     while True:
-        msg = await asyncio.to_thread(input, ": ")
+        stamp = datetime.now().strftime("%H:%M")
+        msg = await asyncio.to_thread(input, f"[{stamp}] {protocol.nick}: ")
         protocol.send_message(msg, server_addr)
 
 
@@ -61,10 +68,12 @@ async def main():
 
     print(f"[INFO] Serwer znaleziony: {server_addr}")
 
+
     # 2. Połącz się z serwerem przez UDP
+    nick = input("Podaj swoj nick: ")
     loop = asyncio.get_running_loop()
     transport, protocol = await loop.create_datagram_endpoint(
-        lambda: ClientProtocol(),
+        lambda: ClientProtocol(nick),
         local_addr=("0.0.0.0", 0)  # automatyczny port klienta
     )
 

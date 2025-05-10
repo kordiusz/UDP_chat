@@ -20,12 +20,13 @@ def get_local_ip():
 
 def calc_broadcast(ip):
     index = ip.rfind('.')+1
+    #dirty but works :)
     return ip[:index] + "255"
 
 async def broadcast_server(name, port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-   # sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
     ip = get_local_ip()
     broadcast_addr = calc_broadcast(ip)

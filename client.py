@@ -15,7 +15,7 @@ class Client:
         print(f"Nasłuchiwanie broadcastów na porcie {BROADCAST_PORT}...")
     def loop(self):
         while True:
-            data, addr = sock.recvfrom(1024)
+            data, addr = self.sock.recvfrom(1024)
             print(f"[ODBIÓR] Od {addr}: {data.decode(errors='ignore')}")
 
 

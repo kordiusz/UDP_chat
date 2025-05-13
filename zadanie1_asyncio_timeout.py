@@ -8,9 +8,6 @@ async def zadanie():
     print("Zakończone")
 
 async def main():
-    # try:
-    #     await asyncio.wait_for(zadanie(), timeout=2)
-    # except asyncio.TimeoutError:
-    #     print("Zadanie przerwane po 2 sekundach")
+    # uzupełnij kod
 
 asyncio.run(main())

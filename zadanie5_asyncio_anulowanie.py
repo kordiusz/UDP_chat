@@ -12,9 +12,8 @@ async def dlugie_zadanie():
         print("Zadanie anulowane")
 
 async def main():
-    task = asyncio.create_task(dlugie_zadanie())
-    await asyncio.sleep(2)
-    # task.cancel()
-    # await task
+    # uzupełnij kod
+    await asyncio.sleep(2) 
+    # uzupełnij kod
 
 asyncio.run(main())

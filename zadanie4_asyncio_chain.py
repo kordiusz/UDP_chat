@@ -8,7 +8,6 @@ async def inner():
     return "zakończono inner"
 
 async def outer():
-    # wynik = await inner()
-    # print("Wynik:", wynik)
+    # uzupełnij kod
 
 asyncio.run(outer())

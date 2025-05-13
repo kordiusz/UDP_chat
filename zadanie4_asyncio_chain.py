@@ -10,4 +10,4 @@ async def inner():
 async def outer():
     # uzupełnij kod
 
-asyncio.run(outer())
+# uzupełnij kod

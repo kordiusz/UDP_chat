@@ -9,9 +9,7 @@ async def oblicz(i):
     return i * i
 
 async def main():
-    # tasks = [asyncio.create_task(oblicz(i)) for i in range(5)]
-    # wyniki = await asyncio.gather(*tasks)
-    # wyniki.sort()
-    # print("Posortowane wyniki:", wyniki)
+    tasks = [asyncio.create_task(oblicz(i)) for i in range(5)]
+    # uzupełnij kod
 
 asyncio.run(main())

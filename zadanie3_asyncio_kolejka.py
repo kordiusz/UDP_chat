@@ -15,7 +15,6 @@ async def konsument(q):
         await asyncio.sleep(0.5)
 
 async def main():
-    # q = asyncio.Queue(maxsize=2)
-    # await asyncio.gather(producent(q), konsument(q))
+    # uzupełnij kod
 
 asyncio.run(main())

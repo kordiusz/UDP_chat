@@ -6,6 +6,4 @@ from multiprocessing import Process
 def hello():
     print("Proces mówi hej!")
 
-# p = Process(target=hello)
-# p.start()
-# p.join()
+# uzupełnij kod

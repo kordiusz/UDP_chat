@@ -5,9 +5,7 @@ import time
 # Wątek wypisujący tekst po 1 sekundzie
 
 def wypisz():
-    time.sleep(1)
+    # uzupełnij kod
     print("Cześć z wątku!")
 
-# t = threading.Thread(target=wypisz)
-# t.start()
-# t.join()
+# uzupełnij kod
